@@ -1,4 +1,4 @@
-# MTCNet
+# MGNet
 Official implementation of MG-Net: Multi-level Global-Aware Network for Thymoma Segmentation
 ## Prerequisites
 The neural network is developed with the PyTorch library, we refer to the PyTorch for the installation.
