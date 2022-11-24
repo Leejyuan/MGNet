@@ -13,6 +13,6 @@ numpy = 1.19.5
 
 einops = 0.3.2
 
-##Training
+## Training
 
-```Training```
+```python train_deep5.py -m UTNet -u train --reduce_size [2,4,8] --block_list 1234 --num_blocks 1,1,1,1 --gpu 0 --aux_loss```
