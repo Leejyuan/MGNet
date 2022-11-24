@@ -26,3 +26,11 @@ To optimize MGNet in your own task, there are several hyperparameters to tune:
 '--fuse': whether fuse feature maps in decoder blocks for prediction.
 
 '--aux_loss': whether applie deep supervision in training
+
+## Testing
+
+```python test.py -m MGNet -u test --reduce_size [2,4,8] --block_list 1234  --gpu 0 --aux_loss --fuse --pred --resume```
+
+'--pred': the path to save predict results
+
+'--resume': the path of checkpoint
