@@ -44,6 +44,11 @@ class Mlp(nn.Module):
         return x
 
 class AttentionBlock(nn.Module):
+    '''
+    the spital attention block used in GSAM
+    x: the feature map in low semantic level
+    g: the feature map in high semantic level
+    '''
     def __init__(self, in_channels_x, in_channels_g, int_channels):
         super(AttentionBlock, self).__init__()
         self.Wx = nn.Sequential(nn.Conv2d(in_channels_x, int_channels, kernel_size = 1),
@@ -63,6 +68,9 @@ class AttentionBlock(nn.Module):
         return out*x
 
 class BasicBlock(nn.Module):
+    '''
+    the init block in the beginning of MG-Net
+    '''
 
     def __init__(self, inplanes, planes, stride=1):
         super().__init__()
@@ -97,6 +105,10 @@ class BasicBlock(nn.Module):
         return out
 
 class BasicTransBlock(nn.Module):
+    '''
+    self-attention block
+
+    '''
 
     def __init__(self, in_ch, heads, dim_head, attn_drop=0., proj_drop=0., reduce_size=16, projection='interp', rel_pos=True):
         super().__init__()
@@ -126,6 +138,10 @@ class BasicTransBlock(nn.Module):
         return out
 
 class BasicTransDecoderBlock(nn.Module):
+    '''
+    corss-attention block
+
+    '''
 
     def __init__(self, in_ch, out_ch, heads, dim_head, attn_drop=0., proj_drop=0., reduce_size=16, projection='interp', rel_pos=True):
         super().__init__()
@@ -141,10 +157,10 @@ class BasicTransDecoderBlock(nn.Module):
         self.mlp = nn.Conv2d(out_ch, out_ch, kernel_size=1, bias=False)
 
     def forward(self, x1, x2):
-#        print(x1.shape)
+
         x11=self.conv_ch(x1)
         residue = F.interpolate(x11, size=x2.shape[-2:], mode='bilinear', align_corners=True)
-        #x1: low-res, x2: high-res
+        
         x1 = self.bn_l(x1)
         x2 = self.bn_h(x2)
 
@@ -168,6 +184,9 @@ class BasicTransDecoderBlock(nn.Module):
 # Transformer components
 
 class LinearAttention(nn.Module):
+    '''
+    effective self-attention  with position embedding 
+    '''
     
     def __init__(self, dim, heads=4, dim_head=64, attn_drop=0., proj_drop=0., reduce_size=16, projection='interp', rel_pos=True):
         super().__init__()
@@ -235,6 +254,11 @@ class LinearAttention(nn.Module):
         return out, q_k_attn
 
 class LinearAttentionDecoder(nn.Module):
+    '''
+    effective cross-attention with position embedding 
+    x: low semantic level features
+    q: high semantic level features
+    '''
     
     def __init__(self, in_dim, out_dim, heads=4, dim_head=64, attn_drop=0., proj_drop=0., reduce_size=16, projection='interp', rel_pos=True):
         super().__init__()
@@ -269,8 +293,8 @@ class LinearAttentionDecoder(nn.Module):
         B, C, H, W = x.shape # low-res feature shape
         BH, CH, HH, WH = q.shape # high-res feature shape
 
-        k, v = self.to_kv(x).chunk(2, dim=1) #B, inner_dim, H, W   获取k，v
-        q = self.to_q(q) #BH, inner_dim, HH, WH                    获取
+        k, v = self.to_kv(x).chunk(2, dim=1) #B, inner_dim, H, W  
+        q = self.to_q(q) #BH, inner_dim, HH, WH                    
 
         if self.projection == 'interp' and H != self.reduce_size:
             k, v = map(lambda t: F.interpolate(t, size=self.reduce_size, mode='bilinear', align_corners=True), (k, v))
@@ -303,6 +327,10 @@ class LinearAttentionDecoder(nn.Module):
         return out, q_k_attn
 
 class RelativePositionEmbedding(nn.Module):
+    '''
+    Position Embedding
+    '''
+    
     # input-dependent relative position
     def __init__(self, dim, shape):
         super().__init__()
@@ -363,9 +391,11 @@ class RelativePositionEmbedding(nn.Module):
 
 
 class RelativePositionBias(nn.Module):
-    # input-independent relative position attention
-    # As the number of parameters is smaller, so use 2D here
-    # Borrowed some code from SwinTransformer: https://github.com/microsoft/Swin-Transformer/blob/main/models/swin_transformer.py
+    '''
+    input-independent relative position attention
+    As the number of parameters is smaller, so use 2D here
+    Borrowed some code from SwinTransformer: https://github.com/microsoft/Swin-Transformer/blob/main/models/swin_transformer.py
+    '''
     def __init__(self, num_heads, h, w):
         super().__init__()
         self.num_heads = num_heads
@@ -404,6 +434,10 @@ class RelativePositionBias(nn.Module):
 # Unet Transformer building block
 
 class down_block_trans(nn.Module):
+    '''
+    encoder block onli with self-attention block
+    '''
+    
     def __init__(self, in_ch, out_ch, num_block, bottleneck=False, maxpool=True, heads=4, dim_head=64, attn_drop=0., proj_drop=0., reduce_size=16, projection='interp', rel_pos=True):
 
         super().__init__()
@@ -439,6 +473,9 @@ class down_block_trans(nn.Module):
 
 
 class down_block_cross_trans(nn.Module):
+    '''
+    MTCB in encoder
+    '''
     def __init__(self, in_ch, out_ch, num_block, bottleneck=False, maxpool=True, heads=4, dim_head=64, attn_drop=0., proj_drop=0., reduce_size=16, projection='interp', rel_pos=True):
 
         super().__init__()
@@ -481,11 +518,12 @@ class down_block_cross_trans(nn.Module):
         return out
 
 
-
-
-
-
 class up_block_trans(nn.Module):
+    '''
+    skip conenction only with cross-attention block
+    x1: feature maps in decoder with high-level semantic information
+    x2: feature maps in encoder with low-level detailed information 
+    '''
     def __init__(self, in_ch, out_ch, num_block, bottleneck=False, heads=4, dim_head=64, attn_drop=0., proj_drop=0., reduce_size=16, projection='interp', rel_pos=True):
         super().__init__()
  
@@ -515,6 +553,11 @@ class up_block_trans(nn.Module):
         return out
 
 class up_block_att_trans(nn.Module):
+    '''
+    skip conenction only with spital attention block
+    x1: feature maps in decoder with high-level semantic information
+    x2: feature maps in encoder with low-level detailed information 
+    '''
     def __init__(self, in_ch, out_ch, num_block, bottleneck=False, heads=4, dim_head=64, attn_drop=0., proj_drop=0., reduce_size=16, projection='interp', rel_pos=True):
         super().__init__()
         self.conv_ch = nn.Conv2d(in_ch, out_ch, kernel_size=1)
@@ -535,8 +578,7 @@ class up_block_att_trans(nn.Module):
 
         self.blocks = nn.Sequential(*block_list)
 
-    def forward(self, x1, x2):
-        # x1: low-res feature, x2: high-res feature
+    def forward(self, x1, x2)
         x1 = F.interpolate(self.conv_ch(x1), size=x2.shape[-2:], mode='bilinear', align_corners=True)
         out = self.attn_decoder(x2, x1)
         out = torch.cat([out, x2], dim=1)
@@ -544,6 +586,11 @@ class up_block_att_trans(nn.Module):
 
         return out
 class up_block_GSAM(nn.Module):
+    '''
+    GSAM 
+    x1: feature maps in decoder with high-level semantic information
+    x2: feature maps in encoder with low-level detailed information     
+    '''
     def __init__(self, in_ch, out_ch, num_block, bottleneck=False, heads=4, dim_head=64, attn_drop=0., proj_drop=0., reduce_size=16, projection='interp', rel_pos=True):
         super().__init__()
         self.conv_ch = nn.Conv2d(in_ch, out_ch, kernel_size=1)
@@ -574,6 +621,7 @@ class up_block_GSAM(nn.Module):
         out = self.blocks(out)
 
         return out
+    
 class block_trans(nn.Module):
     def __init__(self, in_ch, num_block, heads=4, dim_head=64, attn_drop=0., proj_drop=0., reduce_size=16, projection='interp', rel_pos=True):
 
