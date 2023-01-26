@@ -154,6 +154,10 @@ def conv1x1(in_planes, out_planes, stride=1):
 
 
 class BasicBlock(nn.Module):
+    '''
+    rediual block
+    
+    '''
 
     def __init__(self, inplanes, planes, stride=1):
         super().__init__()
@@ -188,6 +192,10 @@ class BasicBlock(nn.Module):
         return out 
 
 class BottleneckBlock(nn.Module):
+    '''
+    conv + rediual block
+    
+    '''
 
     def __init__(self, inplanes, planes, stride=1):
         super().__init__()
