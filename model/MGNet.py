@@ -79,16 +79,16 @@ class MGNet(nn.Module):
     def forward(self, x):
         
         x1 = self.inc(x)     #3->base_chan
-#        print(x1.shape)
+
         x2 = self.down1(x1)  # base_chan -> 2*base_chan
-#        print(x2.shape)
+
         x3 = self.down2(x2)  # 2*base_chan -> 4*base_chan
-#        print(x3.shape)
+
         x4 = self.down3(x3)  # 4*base_chan -> 8*base_chan
-#        print(x4.shape)
+
         x5 = self.down4(x4)  # 8*base_chan -> 16*base_chan
-#        print(x5.shape)
-        if self.aux_loss:
+
+        if self.aux_loss: # wether use deep superversion during the training process
             out = self.up1(x5, x4)  #(16*base_chan,8*base_chan, ->>8*base_chan)
             out_df1=F.interpolate(out, size=x.shape[-2:], mode='bilinear', align_corners=True)
             out1 = F.interpolate(self.out1(out), size=x.shape[-2:], mode='bilinear', align_corners=True)
@@ -104,9 +104,10 @@ class MGNet(nn.Module):
             out = self.up4(out, x1)#  base_chan 
             out_df4=out
             out = self.outc(out)
-#            print(out.shape)
-#            outf=torch.cat([out_df1,out_df2,out_df3,out_df4], dim=1) 
+
+
             if self.fuse:
+#            outf=torch.cat([out_df1,out_df2,out_df3,out_df4], dim=1)    # connecting decoder features without any process                
                 out=self.fusion(out_df1,out_df2,out_df3,out_df4) 
                 outf= self.outf(out)
                 return  outf, out, out3, out2, out1
